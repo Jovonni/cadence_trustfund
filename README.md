@@ -1,4 +1,4 @@
-## Problems in documentation
+# Cadence Trust Fund exercise
 
 # Playground
 The playground can be found here (All files are included in this repo -- just in case the playground fails to load the content):
