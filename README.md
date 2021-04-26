@@ -22,13 +22,16 @@ The beneficiary/child cannot withdraw any funds unless the in memory value of ``
   - one signed by ```0x02``` (parent)
   - one signed by ```0x03``` (beneficiary/child)
 - Submit a ```setup_trust``` transaction signed by ```0x03``` to enable the signer to be a beneficiary for withdrawing later from the fund
-- Submit the ```mint``` transaction signed by ```0x01```
-- Submit a ```transfer``` transaction signed by ```0x02``` to send tokens to the trust fund
-- Submit a ```change_restrictions``` transaction signed by ```0x02```
-- Submit a ```change_limit``` transaction signed by ```0x02```
-- Submit a ```withdraw``` transactions signed by ```0x03```
+- Submit the ```mint``` transaction signed by ```0x01``` (This will give mint tokens and deposit them to the parent)
+- Submit a ```transfer``` transaction signed by ```0x02``` to send tokens to the trust fund (The parent will do this as many times as needed throughout the life of the fund)
+- Submit a ```change_restrictions``` transaction signed by ```0x02``` (The parent will do this only when they approve the beneficiary/child to withdraw funds)
+- Submit a ```change_limit``` transaction signed by ```0x02``` (Parent can call this as many times as needed)
+- Submit a ```withdraw``` transactions signed by ```0x03``` (The beneficiary/child can call this as many times as needed)
 
 ## Conclusion
-With this simple approach, the beneficiary/child can only withdraw when the parent has approved withdrawals, and the child is the only account that can withdraw. Originally, we were looking for a way to time-lock the tokens, just in case the parent dies before the child becomes an adult, resulting in the parent not being able to change ```canWithdraw```. This would be ideal. For now, the parent must explicitly adjust the restriction. Only the child can withdraw funds. Another consideration is the actual trust fund is not owned by the parent, but must be owned by someone. To ensure non-approved accounts are restriced from invoking specific functionality, we make use of ```AuthAccount```, and pass this to our mission-critical functions. If we would have just allowed a transaction to pass an ```Address``` in the transaction, this would allow a security vulnerability whereby any account could forge a fake address if they knew which address-value would satisfy our security constraints. Passing ```AuthAccount``` enables us to reference the actual account of the transaction signer directly.
+With this simple approach, the beneficiary/child can only withdraw when the parent has approved withdrawals, and the child is the only account that can withdraw. Originally, we were looking for a way to time-lock the tokens, just in case the parent dies before the child becomes an adult, resulting in the parent not being able to change ```canWithdraw```. This would be ideal. For now, the parent must explicitly adjust the restriction. In solidity, we can do this by taking the current block timestamp, and adding a given amount of time/blocks into the future to create a time lock. I saw we cannot get the current ```Block``` timestamp in the playground, so I paused this approach for a more basic one.
 
+Only the child can withdraw funds. Another consideration is the actual trust fund is not owned by the parent, but must be owned by someone. To ensure non-approved accounts are restriced from invoking specific functionality, we make use of ```AuthAccount```, and pass this to our mission-critical functions. If we would have just allowed a transaction to pass an ```Address``` in the transaction, this would allow a security vulnerability whereby any account could forge a fake address if they knew which address-value would satisfy our security constraints. Passing ```AuthAccount``` enables us to reference the actual account of the transaction signer directly.
 
+## Enhancements
+All three account's ```Vault``` resources all have the concept of ```canWithdraw```, and ```setWithdrawLimit```. This is only needed for the trust fund account, so we can create capabilities to only expose them when needed. We can also breakout the vault restriction logic to exist on a contract in the parent's account, instead of all of the logic on the trust funds account. 
